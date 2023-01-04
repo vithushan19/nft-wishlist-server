@@ -13,11 +13,21 @@ export async function getWishListController(
     .select("*")
     .eq("id", req.params.wishlistId);
 
-  if (error) {
+  let { data: wishlistItems, error: wishlistItemsError } = await supabase
+    .from("wishlist_items")
+    .select("*")
+    .eq("wishlist_id", req.params.wishlistId);
+
+  if (wishlist && wishlist.length > 0 && !error && !wishlistItemsError) {
+    const { id, name } = wishlist[0];
+    res.send({ id, name, items: wishlistItems });
+  } else if (wishlistItemsError) {
+    res.send({
+      wishlistItemsError,
+    });
+  } else {
     res.send({
       error,
     });
-  } else {
-    res.send(wishlist);
   }
 }
