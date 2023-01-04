@@ -10,19 +10,38 @@ export async function addToWishListController(
 
   const body = req.body;
 
-  const { error } = await supabase.from("wishlist_items").insert([
-    {
-      contract_address: body.contract_address,
-      token_id: body.token_id,
-      wishlist_id: body.wishlist_id,
-    },
-  ]);
+  let { data: wishlist_items, error: fetchError } = await supabase
+    .from("wishlist_items")
+    .select("*")
+    .eq("contract_address", body.contract_address)
+    .eq("token_id", body.token_id)
+    .eq("wishlist_id", body.wishlist_id);
 
-  if (error) {
+  if (fetchError) {
     res.send({
-      error,
+      fetchError,
     });
+  } else if (!wishlist_items) {
+    res.send({
+      error: "Error: Could not fetch wishlist items",
+    });
+  } else if (wishlist_items.length === 0) {
+    const { error } = await supabase.from("wishlist_items").insert([
+      {
+        contract_address: body.contract_address,
+        token_id: body.token_id,
+        wishlist_id: body.wishlist_id,
+      },
+    ]);
+
+    if (error) {
+      res.send({
+        error,
+      });
+    } else {
+      res.send({ status: 200 });
+    }
   } else {
-    res.send({ status: 200 });
+    res.send({ error: "Error: duplicate item already exists in wishlist" });
   }
 }
